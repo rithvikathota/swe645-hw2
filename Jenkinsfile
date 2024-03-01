@@ -1,39 +1,38 @@
-pipeline {
-  agent {
-    node {
-      label 'swe645-hw2'
-    }
-  }
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
+pipeline{
+    agent any
+    environment {
+		DOCKERHUB_CREDENTIALS=credentials('dockerhub')
+	}
+  stages{
     stage('Build') {
       steps {
-        sh 'rm -rf *.war'
-        sh 'jar -cvf swe645-hw2.war -C webapp/ .'
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: '*.war', fingerprint: true
-        }
+	sh 'rm -rf *.var'
+        sh 'jar -cvf swe645-hw2.war -C "webapp" .'     
+        sh 'docker build -t rithvikathota/swe645-hw2:latest .'
       }
     }
-    stage('Docker Build and Push') {
+    stage('Login') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-          sh "echo ${PASSWORD} | sudo docker login -u ${USERNAME} --password-stdin"
-          sh "sudo docker build -t 'rithvikathota/swe645-hw2' ."
-          sh "sudo docker push rithvikathota/swe645-hw2"
-        }
-      }
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW |docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+       }
     }
-    stage('Deploy to Kubernetes') {
+    stage("Push image to docker hub"){
       steps {
-        sh "kubectl rollout restart deploy deploy1 -n default"
+        sh 'docker push rithvikathota/swe645-hw2:latest'
       }
     }
+        stage("deploying on k8")
+	{
+		steps{
+			sh 'kubectl set image deployment/deploy1 container-0=rithvikathota/swe645-hw2:latest -n default'
+			sh 'kubectl rollout restart deploy deploy1 -n default'
+		}
+	} 
   }
+ 
+  post {
+	  always {
+			sh 'docker logout'
+		}
+	}    
 }
