@@ -24,8 +24,9 @@ pipeline{
         stage("deploying on k8")
 	{
 		steps{
-			sh 'kubectl set image deployment/deploy1 container-0=rithvikathota/swe645-hw2:latest -n default'
-			sh 'kubectl rollout restart deploy deploy1 -n default'
+			// sh 'kubectl set image deployment/deploy1 container-0=rithvikathota/swe645-hw2:latest -n default'
+			// sh 'kubectl rollout restart deploy deploy1 -n default'
+			sh 'echo ok'
 		}
 	} 
   }
